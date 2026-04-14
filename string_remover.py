@@ -1,47 +1,62 @@
 import pymem
+import pymem.pattern
 import pyuac
-from colorama import init, Fore
 import sys
 import os
-# Initialising Colorama
-init()
-
+import re
 
 def remove():
     try:
-        string_to_removed = input(Fore.LIGHTCYAN_EX + "[?] " + Fore.LIGHTWHITE_EX + "Enter Strings: ")
-        address = int(string_to_removed.split()[0], 0)
-        length = int(string_to_removed.split("(")[1].split(")")[0], 0)
+        string_to_remove = input("[>] " + "enter string to match and remove: ")
+        if not string_to_remove:
+            return
 
-        pymem.memory.write_string(pymem.process.open(process_id), address, bytes(length))
-        print(Fore.LIGHTGREEN_EX + "[+] " + Fore.LIGHTWHITE_EX + "string removed..")
+        pm = pymem.Pymem()
+        pm.open_process_from_id(process_id)
+        target_bytes = string_to_remove.encode('utf-8')
+        pattern = re.escape(target_bytes)
+        
+        print("[>] " + "scanning memory...")
+        addresses = pymem.pattern.pattern_scan_all(pm.process_handle, pattern, return_multiple=True)
+
+        if addresses:
+            for addr in addresses:
+                try:
+                    pm.write_bytes(addr, b'\x00' * len(target_bytes), len(target_bytes))
+                    print("[>] " + f"{addr} has been deleted")
+                except Exception:
+                    pass
+            print("[>] " + f"removed {len(addresses)} instances.")
+        else:
+            print("[>] " + "string not found!")
     except KeyboardInterrupt:
         raise
     except Exception:
-        print(Fore.LIGHTRED_EX + "[-] " + Fore.LIGHTWHITE_EX + "string error!")
+        print("[>] " + "string error!")
 
 
 if __name__ == "__main__":
     try:
         if not pyuac.isUserAdmin():
-            input(Fore.LIGHTYELLOW_EX + "[!] " + Fore.LIGHTWHITE_EX + "Please run as admin. Press Enter to continue...")
+            input("[!] " + "please run as admin. press enter to continue...")
             sys.exit(0)
+
         os.system('cls')
-        print(Fore.LIGHTCYAN_EX + "[*] " + Fore.LIGHTWHITE_EX + "made by idnohwxx (milky)\n")
-        print(Fore.LIGHTYELLOW_EX + "[*] " + Fore.LIGHTWHITE_EX + "1. " + Fore.LIGHTWHITE_EX + "remove string")
-        print(Fore.LIGHTYELLOW_EX + "[*] " + Fore.LIGHTWHITE_EX + "2. " + Fore.LIGHTWHITE_EX + "exit\n")
-        choice = input(Fore.LIGHTCYAN_EX + "[?] " + Fore.LIGHTWHITE_EX + "Enter your choice: ")
+        print("[>] " + "made by idnohwxx (milky)\n")
+        print("[>] " + "1. " + "remove string")
+        print("[>] " + "2. " + "exit\n")
+        choice = input("[>] " + "enter your choice: ")
         if choice == "1":
             os.system('cls')
-            process_id = int(input(Fore.LIGHTCYAN_EX + "[?] " + Fore.LIGHTWHITE_EX + "Enter PID: "), 0)
+            process_id = int(input("[>] " + "Enter PID: "), 0)
             remove()
         elif choice == "2":
-            print("\n" + Fore.LIGHTCYAN_EX + "[*] " + Fore.LIGHTWHITE_EX + "Goodbye!")
+            print("\n" + "[>] " + "goodbye!")
             sys.exit(0)
         else:
-            print(Fore.LIGHTRED_EX + "[-] " + Fore.LIGHTWHITE_EX + "invalid choose. try again.\n")
+            print("[>] " + "invalid choose. try again.\n")
         while True:
             remove()
     except KeyboardInterrupt:
-        print("\n" + Fore.LIGHTCYAN_EX + "[*] " + Fore.LIGHTWHITE_EX + "Goodbye!")
+        print("\n" + "[>] " + "goodbye!")
         sys.exit(0)
